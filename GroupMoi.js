@@ -1,23 +1,27 @@
+Groups = new Mongo.Collection("groups");
+
+
 if (Meteor.isClient) {
-  // counter starts at 0
-  Session.setDefault('counter', 0);
+  // do some clienty stuff
+  Meteor.subscribe("groups");
 
-  Template.hello.helpers({
-    counter: function () {
-      return Session.get('counter');
-    }
+  Template.body.helpers({
+      groups: function () {
+          // Find all groups and list the newest groups first
+          return Groups.find({}, {sort: {createdAt: -1}});
+      }
   });
 
-  Template.hello.events({
-    'click button': function () {
-      // increment the counter when button is clicked
-      Session.set('counter', Session.get('counter') + 1);
-    }
-  });
+// end of client
 }
 
 if (Meteor.isServer) {
-  Meteor.startup(function () {
-    // code to run on server at startup
-  });
+    // Specify which collections are sent to the client
+    Meteor.publish("groups", function () {
+        return Groups.find({
+            owner: this.userId
+        });
+    });
+
+// end of server
 }

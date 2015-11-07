@@ -11,7 +11,14 @@ if (Meteor.isClient) {
           return Groups.find({}, {sort: {createdAt: -1}});
       }
   });
+  
 
+
+  /* BODY EVENT LISTENERS
+  new-group will grab the text from the group textbox and send it to the addGroup function
+  new-number is the same as above but calls the addNumber function.
+  new-text is also the same as above but calls the sendMessage function. 
+  */
   Template.body.events({
       "submit .new-group": function (event) {
           // Grab group name from text field
@@ -54,7 +61,7 @@ if (Meteor.isClient) {
   
 
 
-  /*
+  /* GROUP EVENT LISTENERS
   These four methods make up the toggling functionality 
   that will allow a user to select/deselect 
   individual groups or numbers when blasting out a text
@@ -123,7 +130,50 @@ if (Meteor.isServer) {
                 {_id: groupId},
                 {$addToSet: {numbers: {"number": number, "checked": true }}}
             );
-        }
+        },
+        // remove a group by id
+        deleteGroup: function (groupId) {
+            Groups.remove(
+                {_id: groupId}
+            );
+        },
+        // remove number from a group by updating the numbers array and removing that #
+        deleteNumber: function (groupId, number) {
+            Groups.update(
+                {_id: groupId}, 
+                { $pull: { numbers: {"number": number}}}
+            );
+        },
+        // select/deselect all numbers in a group
+        toggleGroup: function (groupId, toggle) {
+            Groups.update(
+                {_id: groupId}, 
+                { $set: { checked: toggle}}
+            );
+            // Find every number that differs from Group's "checked" boolean
+            var numbers = 
+                Groups.find(
+                    {numbers: { $elemMatch: {"checked": !toggle}}}
+                );
+            // Set all numbers to match Group's "checked" boolean
+            numbers.forEach(function (setter) {
+                for (var index in setter.numbers) {
+                    Groups.update(
+                        { _id: groupId, "numbers.number": setter.numbers[index].number }, 
+                        { $set: {"numbers.$.checked": toggle} }
+                    );
+                }
+            });
+        },
+        // select and deselct individual number in a group
+        toggleNumber: function (groupId, number, toggle) {
+            Groups.update(
+                { _id: groupId, "numbers.number": number }, 
+                { $set: {"numbers.$.checked": toggle} }
+            );
+        },
+
+
     });
 
 
